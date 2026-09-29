@@ -1,310 +1,149 @@
 #include "../include/sistemaEcuaciones.hpp"
 
+#include <algorithm>
+#include <cmath>
+#include <stdexcept>
+#include <vector>
 
-
-using namespace std;
-//Funciones para triangularizar superiormente para obtener la inversa
-void inicializarInversa(vector < vector < double > >  &inversa);
-bool  eliminarCero(vector < vector < double > > &A, vector < vector < double > > &inversa, unsigned int x);
-void hacerCerosColumna(vector < vector < double > > &A, vector < vector < double > > &inversa, unsigned int x);
-void combinarFilas(vector < vector < double > > &matriz, unsigned int filaOrigen, double factor, unsigned int filaDestino);
-void trianguloInferior(vector < vector < double > > &A, vector < vector < double > > &inversa);
-
-
-//Funciones para triangularizar inferiormente para obtener la inversa
-int eliminarCero2(vector < vector < double > > &A, vector < vector < double > > &inversa, unsigned int x);
-void hacerCerosColumna2(vector < vector < double > > &A, vector < vector < double > > &inversa, unsigned int x);
-void trianguloSuperior(vector < vector < double > > &A, vector < vector < double > > &inversa);
-void obtenerUnidad(vector < vector < double > > &A, vector < vector < double > > &inversa);
-
-//Funciones para triangularizar superiormente para obtener el determinante
-void hacerCerosColumna(vector < vector < double > > &A, unsigned int x);
-bool  eliminarCero(vector < vector < double > > &A, unsigned int x);
-void triangularizarMatriz(vector < vector < double > > &A);
-double productoDiagonal(const vector < vector < double > > &matriz);
-
-
-
-void multiplicarMatrices(const vector < vector < double > > &m1, const vector < vector < double > > &m2, vector < vector < double > > &producto);
-
-void resolverSistemaEcuaciones(vector < vector < double > > A, vector < vector < double > > B, int n, vector < vector < double > > &X)
+namespace
 {
-	vector < vector < double > > inversa; //matriz inversa de la matriz de coeficientes que hay que calcular para resolver el sistema.
-	inversa = vector< vector< double > >(n, vector< double >(n)); //Matriz de N x N
-	
-	//Inicializamos la matriz inversa
-	inicializarInversa(inversa);
+constexpr double EPSILON = 1e-12;
 
-	//Se triangulariza la matriz por debajo de la diagonal
-	trianguloInferior(A, inversa);
-	
-	//Mostramos determinante
-	double determinante = productoDiagonal(A);
-	
-	if (fabs(determinante) < 0.0000000001) //Si el determinante es 0 no hay solución
-	{
-		std::cout << "Fallo en resolución, determinante = 0" << std::endl;
-		exit(0);
-	}
-	
-	//Se triangulariza la matriz por encima de la diagonal
-	trianguloSuperior(A,inversa);
-	
-	obtenerUnidad(A, inversa);
-	
-	//Se muestra la inversa
-	multiplicarMatrices(inversa, B, X);
+void intercambiarFilas(std::vector<std::vector<double>> &matriz,
+                       int fila1, int fila2)
+{
+    if (fila1 != fila2)
+    {
+        std::swap(matriz[fila1], matriz[fila2]);
+    }
 }
 
-//Funcion para inicializar la matriz inversa que se inicializa con la matriz unidad
-	
-void inicializarInversa(vector < vector < double > >  &inversa)
+int buscarPivote(const std::vector<std::vector<double>> &matriz,
+                 int columna, int inicio)
 {
- 
- for(unsigned int i = 0; i < inversa.size(); i++)
-  for(unsigned int j = 0; j < inversa.size(); j++)
-   {
-    if (i == j)
-     inversa[i][j] = 1.0;
-    else
-     inversa[i][j] = 0.0;
-   }
+    int pivote = inicio;
+
+    for (int i = inicio + 1; i < static_cast<int>(matriz.size()); ++i)
+    {
+        if (std::fabs(matriz[i][columna]) >
+            std::fabs(matriz[pivote][columna]))
+        {
+            pivote = i;
+        }
+    }
+
+    return pivote;
+}
 }
 
-//Funcion para triangularizar la matriz por debajo de la diagonal principal y sirve para calcular la matriz inversa
-void trianguloInferior(vector < vector < double > > &A, vector < vector < double > > &inversa)
+void resolverSistemaEcuaciones(
+    std::vector<std::vector<double>> A,
+    std::vector<std::vector<double>> B,
+    int n,
+    std::vector<std::vector<double>> &X)
 {
-	bool correcto;
-	for(unsigned int i = 0; i < A.size() - 1; i++)
-	{
-		if (fabs(A[i][i])< 0.0000000001) //Se ha encontrado un 0 en la diagonal principal, hay que eliminarlo
-		{
-			correcto = eliminarCero(A, inversa, i);
-			if (correcto == false)
-			{
-				std::cout << "Fallo en diagonal principal, 0 encontrado en [" 
-					<< i << "][" << i << "] = " << A[i][i] << std::endl;
-				exit(0);
-			}
-		}
-		hacerCerosColumna(A, inversa, i);
-	}
+    if (n <= 0 ||
+        static_cast<int>(A.size()) != n ||
+        static_cast<int>(B.size()) != n)
+    {
+        throw std::invalid_argument("Dimensiones incorrectas");
+    }
+
+    const int columnasB = static_cast<int>(B[0].size());
+
+    for (int k = 0; k < n; ++k)
+    {
+        const int pivote = buscarPivote(A, k, k);
+
+        if (std::fabs(A[pivote][k]) < EPSILON)
+        {
+            throw std::runtime_error("Sistema singular");
+        }
+
+        intercambiarFilas(A, k, pivote);
+        intercambiarFilas(B, k, pivote);
+
+        for (int i = k + 1; i < n; ++i)
+        {
+            const double factor = A[i][k] / A[k][k];
+
+            for (int j = k; j < n; ++j)
+            {
+                A[i][j] -= factor * A[k][j];
+            }
+
+            for (int j = 0; j < columnasB; ++j)
+            {
+                B[i][j] -= factor * B[k][j];
+            }
+        }
+    }
+
+    X.assign(n, std::vector<double>(columnasB, 0.0));
+
+    for (int columna = 0; columna < columnasB; ++columna)
+    {
+        for (int i = n - 1; i >= 0; --i)
+        {
+            double valor = B[i][columna];
+
+            for (int j = i + 1; j < n; ++j)
+            {
+                valor -= A[i][j] * X[j][columna];
+            }
+
+            if (std::fabs(A[i][i]) < EPSILON)
+            {
+                throw std::runtime_error("Sistema singular");
+            }
+
+            X[i][columna] = valor / A[i][i];
+        }
+    }
 }
 
-//Funcion para triangularizar la matriz por debajo de la diagonal principal y sirve para calcular el determinante
-void triangularizarMatriz(vector < vector < double > > &A)
+double determinante(std::vector<std::vector<double>> &A)
 {
-	bool correcto;
-	for(unsigned int i = 0; i < A.size() - 1; i++)
-	{
-		if (fabs(A[i][i])< 0.0000000001) //Se ha encontrado un 0 en la diagonal principal, hay que eliminarlo
-		{
-			correcto = eliminarCero(A, i);
-			if (correcto == false)
-			{
-				std::cout << "Fallo en diagonal principal, 0 encontrado en [" 
-					<< i << "][" << i << "] = " << A[i][i] << std::endl;
-				exit(0);
-			}
-		}
-		hacerCerosColumna(A, i);
-	}
+    const int n = static_cast<int>(A.size());
+
+    if (n == 0)
+    {
+        return 1.0;
+    }
+
+    std::vector<std::vector<double>> matriz = A;
+
+    double det = 1.0;
+    int signo = 1;
+
+    for (int k = 0; k < n; ++k)
+    {
+        const int pivote = buscarPivote(matriz, k, k);
+
+        if (std::fabs(matriz[pivote][k]) < EPSILON)
+        {
+            return 0.0;
+        }
+
+        if (pivote != k)
+        {
+            intercambiarFilas(matriz, pivote, k);
+            signo = -signo;
+        }
+
+        const double valorPivote = matriz[k][k];
+        det *= valorPivote;
+
+        for (int i = k + 1; i < n; ++i)
+        {
+            const double factor = matriz[i][k] / valorPivote;
+
+            for (int j = k + 1; j < n; ++j)
+            {
+                matriz[i][j] -= factor * matriz[k][j];
+            }
+        }
+    }
+
+    return signo * det;
 }
-
-double determinante(vector < vector < double > > &A)
-{
-	triangularizarMatriz(A);
-	return productoDiagonal(A);
-}
-
-
-//Funcion para eliminar un cero de la diagonal principal en la fila x y sirve para la inversa
-bool  eliminarCero(vector < vector < double > > &A, vector < vector < double > > &inversa, unsigned int x)
-{
-	unsigned int i;
-	bool correcto = false;
-	bool salir = false;
-
-	i = x+1;
-	while(salir == false)
-	{
-		if (i == A.size())
-			salir = true;
-		else if (fabs(A[i][x]) > 0.0000000001) //Comprueba que no es 0
-		{
-			salir = true;
-			correcto = true;
-		}
-		else
-			i = i + 1;
-	}
-	if (correcto == true)
-	{
-		combinarFilas(A, i, 1.0, x);
-		combinarFilas(inversa, i, 1.0, x);
-	}
-	return correcto;
-}
-
-//Funcion para eliminar un cero de la diagonal principal en la fila x y sirve para el determinante
-bool  eliminarCero(vector < vector < double > > &A, unsigned int x)
-{
-	unsigned int i;
-	bool correcto = false;
-	bool salir = false;
-
-	i = x+1;
-	while(salir == false)
-	{
-		if (i == A.size())
-			salir = true;
-		else if (fabs(A[i][x]) > 0.0000000001) //Comprueba que no es 0
-		{
-			salir = true;
-			correcto = true;
-		}
-		else
-			i = i + 1;
-	}
-	if (correcto == true)
-		combinarFilas(A, i, 1.0, x);
-
-	return correcto;
-}
-
-//Funcion que hace ceros en una columna y sirve para calcular la matriz inversa
-
-void hacerCerosColumna(vector < vector < double > > &A, vector < vector < double > > &inversa, unsigned int x)
-{
-	double aux;
-
-	for(unsigned int i = x+1; i < A.size(); i++)
-	{
-		aux = -A[i][x]/A[x][x];
-		combinarFilas(A, x, aux, i);
-		combinarFilas(inversa, x, aux, i);
-	}
-}
-
-//Funcion que hace ceros en una columna y sirve para el determinante
-
-void hacerCerosColumna(vector < vector < double > > &A, unsigned int x)
-{
-	double aux;
-
-	for(unsigned int i = x+1; i < A.size(); i++)
-	{
-		aux = -A[i][x]/A[x][x];
-		combinarFilas(A, x, aux, i);
-	}
-}
-
-
-
-//Esta funcion se usa para hacer combinaciones lineales en filas en una matriz
-// En este caso, la fila origen se multiplica por factor y se suma a la destino
-void combinarFilas(vector < vector < double > > &matriz, unsigned int filaOrigen, double factor, unsigned int filaDestino)
-{
-	for(unsigned int i = 0; i < matriz.size(); i++)
-		matriz[filaDestino][i] = matriz[filaDestino][i] + factor * matriz[filaOrigen][i];
-}
-
-//Esta función calcula el valor del producto de los elementos de la diagonal principal de la matriz
-double productoDiagonal(const vector < vector < double > > &matriz)
-{
-	double d = 1.0;
-
-	for(unsigned int i = 0; i < matriz.size(); i++)
-		d = d * matriz[i][i];
-
-	return d;  
-}
-
-//Funcion para triangularizar la matriz por encima de la diagonal principal y sirve para calcuñar la matriz inversa
-void trianguloSuperior(vector < vector < double > > &A, vector < vector < double > > &inversa)
-{
-	bool correcto;
-	for(unsigned int i = A.size() - 1; i > 0; i--)
-	{
-		if (fabs(A[i][i])< 0.0000000001) //Comprueba que es 0
-		{
-			correcto = eliminarCero2(A, inversa, i);
-			if (correcto == false)
-			{
-				exit(0);
-			}
-		}
-		hacerCerosColumna2(A, inversa, i);
-	}
-}
-
-
-//Funcion para eliminar ceros hacia arriba
-int eliminarCero2(vector < vector < double > > &A, vector < vector < double > > &inversa, unsigned int x)
-{
-	int i;
-	bool correcto = false;
-	bool salir = false;
-
-	i = x - 1;
-	while(salir == false)
-	{
-		if (i == -1)
-			salir = true;
-		else if (fabs(A[i][x]) > 0.0000000001)
-		{
-			salir = true;
-			correcto = true;
-		}
-		else
-			i = i - 1;
-	}
-	if (correcto == true)
-	{
-		combinarFilas(A, i, 1.0, x);
-		combinarFilas(inversa, i, 1.0, x);
-	}
-	return correcto;
-}
-
-//Funcion para hacer ceros en el triángulo superior
-void hacerCerosColumna2(vector < vector < double > > &A, vector < vector < double > > &inversa, unsigned int x)
-{
-	double aux;
-
-	for(size_t i = x-1; i >= 0; i--)
-	{
-		aux = -A[i][x] / A[x][x];
-		combinarFilas(A, x, aux, i);
-		combinarFilas(inversa, x, aux, i);
-	}
-}
-
-void obtenerUnidad(vector < vector < double > > &A, vector < vector < double > > &inversa)
-{
-	double aux;
-
-	for(unsigned int i = 0; i < A.size(); i++)
-	{
-		aux = A[i][i];
-		for(unsigned int j = 0; j < A.size(); j++)
-		{
-			A[i][j] = A[i][j] / aux;
-			inversa[i][j] = inversa[i][j] / aux;
-		}
-	}
-}
-void multiplicarMatrices(const vector < vector < double > > &m1, const vector < vector < double > > &m2, vector < vector < double > > &producto)
-{
-
-	for(unsigned int i = 0; i < m1.size(); i++) //Recorre filas de la primera matriz
-	{
-		for(unsigned int j = 0; j < m2[0].size(); j++) //Recorre columnas de la segunda matriz
-		{
-			producto[i][j] = 0.0;
-			for(unsigned int k = 0; k < m1[0].size(); k++) //Recorre los elementos a multiplicar (numero de columnas de la primera matriz)
-				producto[i][j] = producto [i][j] + m1[i][k]*m2[k][j];
-		}
-	}
-}
-

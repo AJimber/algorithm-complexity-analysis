@@ -1,108 +1,59 @@
-/*!a pesar de que se puede trabajar con nanosegundos, se devuelven los tiempos en microsegundos*/
+// include/ClaseTiempo.hpp
 
-// http://man7.org/linux/man-pages/man2/clock_gettime.2.html
-/*
-Data Type: struct timespec
+#ifndef CLASE_TIEMPO_HPP
+#define CLASE_TIEMPO_HPP
 
-    The struct timespec structure represents an elapsed time. It is declared in sys/time.h and has the following members:
-
-    time_t tv_sec
-       This represents the number of whole seconds of elapsed time.
-    long  tv_nsec
-    This is the rest of the elapsed time (a fraction of a second), represented as the number of nanoseconds.  
-*/
-
-// Ojo hay que compilar g++ -Wall main.cpp -lrt para incluir las librerías de tiempos.
-#ifndef CLASE_TIEMPO_CPP
-#define CLASE_TIEMPO_CPP
-
+#include <chrono>
 #include <cassert>
-#include <ctime>
-#include <cstdio>
-#include <cstring> //Para usar memset
-#include <iostream>
-#include <stdint.h> // Para usar uint64_t
+#include <cstdint>
 
- /*!\brief Models a clock to measure performace.*/
-  class Clock
-  {
-  private:
-    timespec _start;
-    timespec _stop;
-    bool _isStarted;
-  public:
-    Clock ()
+class Clock
+{
+private:
+    using ClockType = std::chrono::steady_clock;
+
+    ClockType::time_point startTime_;
+    ClockType::time_point stopTime_;
+    bool started_;
+
+public:
+    Clock() : started_(false) {}
+
+    void start()
     {
-      memset(&_start,0,sizeof(timespec));
-      memset(&_stop,0,sizeof(timespec));
-      _isStarted=false;
-    } 
-    /*!\brief Starts the clock.
-     * \pre not isStarted()
-     * \post isStarted()
-     */
-    void start ()
-    {      
-      assert (!isStarted());
-      clock_gettime (CLOCK_REALTIME, &_start);   
-      _isStarted=true;
+        assert(!started_);
+        startTime_ = ClockType::now();
+        started_ = true;
     }
-    /*!\brief Re-starts the clock.
-     * \post isStarted()
-     */
-    void restart ()
-    {      
-      clock_gettime (CLOCK_REALTIME, &_start);   
-      _isStarted=true;
-    }
-   
-    /*!\brief Stops the clock.
-     * \pre isStarted()
-     * \post not isStarted()
-     */ 
-    void stop ()
+
+    void restart()
     {
-      assert (_isStarted);
-      clock_gettime (CLOCK_REALTIME, &_stop);   
-      _isStarted=false;
+        startTime_ = ClockType::now();
+        started_ = true;
     }
-    /*!\brief Is the clock started?
-     * \return true if the clock is started currently.
-     */
+
+    void stop()
+    {
+        assert(started_);
+        stopTime_ = ClockType::now();
+        started_ = false;
+    }
+
     bool isStarted() const
     {
-      return _isStarted;
+        return started_;
     }
-    /*!\brief Return the elapsed time in mcs.*/
-    uint64_t elapsed() const
+
+    std::uint64_t elapsed() const
     {
-      assert (!_isStarted);
-      uint64_t startT = (uint64_t)_start.tv_sec * 1000000LL + (uint64_t)_start.tv_nsec / 1000LL;
-      uint64_t stopT = (uint64_t)_stop.tv_sec * 1000000LL + (uint64_t)_stop.tv_nsec / 1000LL;
-      return stopT-startT;
+        assert(!started_);
+
+        return static_cast<std::uint64_t>(
+            std::chrono::duration_cast<std::chrono::microseconds>(
+                stopTime_ - startTime_
+            ).count()
+        );
     }
-  };
-/*
-int main()
-{
-	Clock time;
-	unsigned int a, b;
-	a = 0;
-	b = 0;
-	
-	time.start();
-	
-	for(unsigned int i = 0; i <= 1000000000; i++)
-	{
-		a++;
-		b++;
-	}
-	if (time.isStarted())
-	{
-		time.stop();
-		std::cout << "Han pasado " << time.elapsed() << "microsegundos \n";
-	}
-	return 0;
-}*/
+};
 
 #endif
