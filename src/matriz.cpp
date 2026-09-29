@@ -74,7 +74,7 @@ void matrizCuadrado()
         return;
     }
     else {
-        for (int i = 0; i < tiemposReales.size(); i++) {
+        for (size_t i = 0; i < tiemposReales.size(); i++) {
             plotOutFile << numeroElementos[i] << " " << tiemposReales[i] << " " << tiemposEstimados[i] << std::endl;
         }
 
@@ -172,7 +172,7 @@ void ajustePolinomicoMatriz(const std::vector<double> &n, const std::vector<doub
     std::vector<std::vector<double>> x(coef, std::vector<double>(1));
     resolverSistemaEcuaciones(A, B, A.size(), x);
 
-    for (int i = 0; i < x.size(); i++) {
+    for (size_t i = 0; i < x.size(); i++) {
         a[i] = x[i][0];
     }
 }

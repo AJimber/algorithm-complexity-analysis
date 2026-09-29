@@ -17,7 +17,7 @@ void calcularTiemposEstimadosPolinomico(const std::vector<double> &numeroElement
 
 void rellenarVector(std::vector<int> &v)
 {
-    for(int i = 0; i < v.size(); i++)
+    for(size_t i = 0; i < v.size(); i++)
     {
         v[i] = rand() % 10000000;
     }
@@ -27,9 +27,9 @@ void rellenarVector(std::vector<int> &v)
 void burbuja(std::vector<int> &v)
 {
     int aux;
-    for(int i = 0; i < v.size() - 1; i++)
+    for(size_t i = 0; i < v.size() - 1; i++)
     {
-        for(int n = 0; n < v.size() - i - 1; n++)
+        for(size_t n = 0; n < v.size() - i - 1; n++)
         {
             if(v[n] > v[n + 1])
             {
@@ -98,7 +98,7 @@ void ordenacionBurbuja()
         return;
     }
     else {
-        for (int i = 0; i < tiemposReales.size(); i++) {
+        for (size_t i = 0; i < tiemposReales.size(); i++) {
             plotOutFile << numeroElementos[i] << " " << tiemposReales[i] << " " << tiemposEstimados[i] << std::endl;
         }
 
@@ -141,7 +141,7 @@ void tiemposOrdenacionBurbuja(int nMin, int nMax, int inc, int rep,
 	double med = 0;
 	float percentage = 0;
 
-    for(size_t i = 0; i < rep; i++)
+    for(int i = 0; i < rep; i++)
     {
         // Rellenar vector
         rellenarVector(v);
@@ -212,7 +212,7 @@ void ajustePolinomico(const std::vector<double> &n, const std::vector<double> &t
     std::vector<std::vector<double>> x(coef, std::vector<double>(1));
     resolverSistemaEcuaciones(A, B, A.size(), x);
 
-    for (int i = 0; i < x.size(); i++) {
+    for (size_t i = 0; i < x.size(); i++) {
         a[i] = x[i][0];
     }
 }

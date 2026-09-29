@@ -8,7 +8,7 @@ void rellenaMatAleatoria(std::vector<std::vector<double> > &m, int ordenmat)
 {
     srand(time(NULL));
     
-    for(int i = 0; i < ordenmat; i++) 
+    for(size_t i = 0; i < ordenmat; i++) 
     {
         for (int j = 0; j < ordenmat; j++) 
         {
@@ -53,12 +53,12 @@ double calcularCoeficienteDeterminacion(const std::vector<double> &tiemposReales
     double varEst = 0;
     double varRl = 0;
 
-    for(int i = 0; i < tiemposReales.size(); i++) 
+    for(size_t i = 0; i < tiemposReales.size(); i++) 
 	{
         varRl  += pow((tiemposReales[i]-mdRl), 2);
     }
 
-    for(int i = 0; i < tiemposEstimados.size(); i++) 
+    for(size_t i = 0; i < tiemposEstimados.size(); i++) 
 	{
         varEst += pow((tiemposEstimados[i]-mdEst), 2);
     }
@@ -75,15 +75,15 @@ void calcularMatrices(
     std::vector<std::vector<double>> &matrizCoeficientes,
     std::vector<std::vector<double>> &matrizTerminosIndependientes)
 {
-    for(int i = 0; i < ordenMatrizSistema; i++)
+    for(size_t i = 0; i < ordenMatrizSistema; i++)
     {
-        for(int j = 0; j < ordenMatrizSistema; j++)
+        for(size_t j = 0; j < ordenMatrizSistema; j++)
         {
             matrizCoeficientes[i][j] = sumatorio(numeroElementos, tiemposReales, i + j, 0);
         }
     }
 
-    for(int i = 0; i < ordenMatrizSistema; i++)
+    for(size_t i = 0; i < ordenMatrizSistema; i++)
     {
         matrizTerminosIndependientes[i][0] = sumatorio(numeroElementos, tiemposReales, i, 1);
     }

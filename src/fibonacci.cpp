@@ -78,7 +78,7 @@ void fibonacciRecursivo()
         return;
     }
     else {
-        for (int i = 0; i < tiemposReales.size(); i++) {
+        for (size_t i = 0; i < tiemposReales.size(); i++) {
             plotOutFile << numeroElementos[i] << " " << tiemposReales[i] << " " << tiemposEstimados[i] << std::endl;
         }
 

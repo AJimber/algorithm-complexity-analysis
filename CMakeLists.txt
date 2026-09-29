@@ -8,7 +8,7 @@ project(algorithm-complexity-analysis LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(practica1
+add_executable(main
     src/main.cpp
     src/burbuja.cpp
     src/fibonacci.cpp

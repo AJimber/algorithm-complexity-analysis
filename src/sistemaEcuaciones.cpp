@@ -272,7 +272,7 @@ void hacerCerosColumna2(vector < vector < double > > &A, vector < vector < doubl
 {
 	double aux;
 
-	for(int i = x-1; i >= 0; i--)
+	for(size_t i = x-1; i >= 0; i--)
 	{
 		aux = -A[i][x] / A[x][x];
 		combinarFilas(A, x, aux, i);
